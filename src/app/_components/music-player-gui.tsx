@@ -26,7 +26,6 @@ export default function MusicPlayerGUI({
   const [initialCountdown, setInitialCountdown] = useState<number>(5);
 
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
-  const [numberOfTracks, setNumberOfTracks] = useState<number>(0);
   const [playerState, setPlayerState] = useState<CallbackState>();
   const [playerInstance, setPlayerInstance] = useState<Spotify.Player>();
   const [countdown, setCountdown] = useState(initialCountdown);
@@ -38,27 +37,18 @@ export default function MusicPlayerGUI({
 
   const handlePlaylistSelect = (playlistId: string) => {
     setSelectedPlaylistId(playlistId);
-    const id = playlistId.split(":")[2]!;
-    fetchPlaylist(id);
   };
-  const {
-    mutate: fetchPlaylist,
-    isLoading,
-    error,
-  } = api.spotify.fetchPlayerList.useMutation({
-    onSuccess: (data) => {
-      setNumberOfTracks(data.items.length);
-    },
-  });
 
   const handleCallbackState = (state: CallbackState) => {
     console.log("🚀 ~ handleCallbackState ~ state:", state);
     return setPlayerState(state);
   };
+
   const handlePlayerInstance = (player: Spotify.Player) => {
     console.log("🚀 ~ handlePlayerInstance ~ player:", player);
     return setPlayerInstance(player);
   };
+
   const handleUpdateCountdown = (countdown: number) => {
     setInitialCountdown(countdown);
     setCountdown(countdown);
@@ -74,6 +64,7 @@ export default function MusicPlayerGUI({
   const handleNextTrack = () => {
     if (playerInstance) {
       playerInstance.nextTrack().catch(console.error);
+      setLocked(true);
     }
   };
 
@@ -83,16 +74,34 @@ export default function MusicPlayerGUI({
     }
   };
 
+  const handleSetRepeatMode = () => {
+    if (playerInstance) repeatMode({ state: "context" });
+  };
+
+  const { mutate: repeatMode } = api.spotify.setRepeatMode.useMutation({
+    onSuccess: () => console.log("Set repeat mode!"),
+  });
+
+  const initRepeatMode = () => {
+    if (playerInstance) {
+      playerInstance
+        .getCurrentState()
+        .then((state) => {
+          if (state && state.repeat_mode !== 2) {
+            handleSetRepeatMode();
+          }
+        })
+        .catch(console.error);
+    }
+  };
+
   const startCountdown = () => {
-    // 清除已存在的interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
 
-    // 重置倒计时
     setCountdown(initialCountdown);
 
-    // 开始新的倒计时
     intervalRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -113,11 +122,10 @@ export default function MusicPlayerGUI({
     setCountdown(initialCountdown);
   };
 
-  // 监听播放状态
   useEffect(() => {
     if (playerInstance && playerState) {
+      initRepeatMode();
       setPlaying(playerState?.isPlaying);
-      console.log(playerState);
     }
 
     if (playerState?.isPlaying) {
@@ -134,7 +142,6 @@ export default function MusicPlayerGUI({
       }, initialCountdown * 1000);
     }
 
-    // 清理函数
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -147,7 +154,7 @@ export default function MusicPlayerGUI({
 
   return (
     <>
-      {/* init spotify playback */}
+      {/* init spotify playback component */}
       <div>
         {selectedPlaylistId && (
           <div hidden={true}>
@@ -161,6 +168,7 @@ export default function MusicPlayerGUI({
         )}
       </div>
 
+      {/* Playlist Selector */}
       <PlaylistSelector
         playlists={playlists}
         onPlaylistSelect={handlePlaylistSelect}
@@ -168,10 +176,6 @@ export default function MusicPlayerGUI({
       />
       <div className="card w-96 bg-base-100 shadow-xl">
         <figure>
-          {/* <button className="btn btn-circle absolute right-5 top-5">
-            {numberOfTracks}
-          </button> */}
-
           <div className="flex min-h-[320px] w-full items-center justify-center">
             <button className="btn-circle btn-ghost size-64 text-9xl">
               {countdown}
@@ -182,7 +186,7 @@ export default function MusicPlayerGUI({
         <div className="card-body">
           <div className="mb-5 flex gap-2">
             <div className="w-full">
-              {isLocked ? ( // Locked
+              {isLocked ? (
                 <>
                   <h2 className="skeleton mb-3 h-6 w-40"></h2>
                   <div className="skeleton h-4 w-28"></div>

@@ -11,7 +11,7 @@ export default async function MusicPlayer() {
   const accessToken = session.accessToken.access_token;
 
   if (session?.user) {
-    data = await api.spotify.fetchUserPlaylists();
+    data = await api.spotify.getUserPlaylists();
   }
 
 

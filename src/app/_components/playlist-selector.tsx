@@ -14,7 +14,7 @@ export function PlaylistSelector({
   onCountDown,
 }: PlaylistSelectorProps) {
   return (
-    <div className="join mb-6 flex justify-center">
+    <div className="join mb-6 flex justify-center w-96">
       <select
         className="max-w-s join-item select w-full"
         onChange={(e) => onPlaylistSelect(e.target.value)}

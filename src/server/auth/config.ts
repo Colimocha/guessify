@@ -30,6 +30,7 @@ export const authConfig = {
     Spotify({
       clientId: process.env.SPOTIFY_CLIENT_ID,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+      redirectProxyUrl: process.env.SPOTIFY_REDIRECT_PROXY_URL,
       authorization:
         "https://accounts.spotify.com/authorize?scope=" + scope,
     }),

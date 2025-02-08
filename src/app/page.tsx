@@ -2,8 +2,8 @@ import Link from "next/link";
 
 import { auth } from "~/server/auth";
 import { HydrateClient } from "~/trpc/server";
+import { GameBoard } from "./_components/gameboard";
 import MusicPlayer from "./_components/music-player";
-import MusicPlayerGUI from "./_components/music-player-gui";
 
 export default async function Home() {
   const session = await auth();
@@ -30,8 +30,10 @@ export default async function Home() {
             </div>
           </div>
 
-          {session && <MusicPlayer />}
-
+          <div className="flex gap-4">
+            {session && <MusicPlayer />}
+            {session && <GameBoard />}
+          </div>
         </div>
       </main>
     </HydrateClient>
