@@ -23,6 +23,11 @@ interface MusicPlayerClientProps {
   token: string;
 }
 
+enum IntervalValue {
+  Begin = 0,
+  Random = 1,
+}
+
 export default function MusicPlayerGUI({
   playlists,
   token,
@@ -33,6 +38,9 @@ export default function MusicPlayerGUI({
   const [playerState, setPlayerState] = useState<CallbackState>();
   const [playerInstance, setPlayerInstance] = useState<Spotify.Player>();
   const [countdown, setCountdown] = useState(initialCountdown);
+  const [intervalValue, setIntervalValue] = useState<IntervalValue>(
+    IntervalValue.Begin,
+  );
 
   const [isLocked, setLocked] = useState(true);
   const [isPlaying, setPlaying] = useState(false);
@@ -56,6 +64,10 @@ export default function MusicPlayerGUI({
   const handleUpdateCountdown = (countdown: number) => {
     setInitialCountdown(countdown);
     setCountdown(countdown);
+  };
+
+  const handleUpdateIntervalValue = (value: number) => {
+    setIntervalValue(value);
   };
 
   const handlePlayButton = () => {
@@ -131,6 +143,22 @@ export default function MusicPlayerGUI({
     setCountdown(initialCountdown);
   };
 
+  const getRandomPosition = () => {
+    if (playerState?.track) {
+      const trackDurationMs = playerState.track.durationMs;
+      const intervalMs = initialCountdown * 1000; // 将倒计时秒数转换为毫秒
+
+      // 确保不会超出歌曲总长度
+      const maxStartPosition = trackDurationMs - intervalMs;
+
+      if (maxStartPosition > 0) {
+        // 生成一个随机的起始位置
+        return Math.floor(Math.random() * maxStartPosition);
+      }
+    }
+    return 0;
+  };
+
   useEffect(() => {
     if (playerInstance && playerState) {
       setPlaying(playerState?.isPlaying);
@@ -138,31 +166,39 @@ export default function MusicPlayerGUI({
 
     if (playerState?.isPlaying) {
       startCountdown();
+
+      if (intervalValue === IntervalValue.Random && playerInstance) {
+        const randomPos = getRandomPosition();
+        playerInstance.seek(randomPos).catch(console.error);
+      } else if (intervalValue === IntervalValue.Begin) {
+        playerInstance?.seek(0).catch(console.error);
+      }
+
+      // 设置定时器，在倒计时结束后
+      timerRef.current = setTimeout(() => {
+        if (playerInstance) {
+          playerInstance.pause().catch(console.error);
+          if (intervalValue === IntervalValue.Random) {
+            const newRandomPos = getRandomPosition();
+            playerInstance.seek(newRandomPos).catch(console.error);
+          } else {
+            playerInstance.seek(0).catch(console.error);
+          }
+          setPlaying(false);
+        }
+      }, initialCountdown * 1000);
     } else {
       stopCountdown();
     }
 
-    if (playerState?.isPlaying && playerInstance) {
-      timerRef.current = setTimeout(() => {
-        playerInstance.pause().catch(console.error);
-        playerInstance.seek(0).catch(console.error);
-        setPlaying(false);
-      }, initialCountdown * 1000);
-    }
-
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [playerState?.isPlaying, playerInstance, playerState]);
+  }, [playerState?.isPlaying, playerInstance, playerState, intervalValue]);
 
   return (
     <>
-      {/* init spotify playback component */}
       <div>
         {selectedPlaylistId && (
           <div hidden={true} className="">
@@ -176,16 +212,16 @@ export default function MusicPlayerGUI({
         )}
       </div>
 
-      {/* Playlist Selector */}
       <PlaylistSelector
         playlists={playlists}
         onPlaylistSelect={handlePlaylistSelect}
         onCountDown={handleUpdateCountdown}
+        onIntervalValue={handleUpdateIntervalValue}
       />
       <div className="card w-96 bg-base-100 shadow-xl">
         <figure>
           <div className="flex min-h-[320px] w-full items-center justify-center">
-            <button className="btn-circle btn-ghost size-64 text-9xl ring ring-primary ring-offset-base-100 ring-offset-2 animate-pulse">
+            <button className="btn-circle btn-ghost size-64 animate-pulse text-9xl ring ring-primary ring-offset-2 ring-offset-base-100">
               {countdown}
             </button>
           </div>

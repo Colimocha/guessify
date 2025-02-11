@@ -15,14 +15,16 @@ export default function SpotifyPlayback({
   playerInstance,
 }: MusicPlayerClientProps) {
   return (
-    <SpotifyPlayer
-      token={token}
-      uris={[playlist]}
-      play={true}
-      callback={(state) => onCallbackState(state)}
-      getPlayer={(player) => playerInstance(player)}
-      hideAttribution={true}
-      hideCoverArt={true}
-    />
+    <>
+      <SpotifyPlayer
+        token={token}
+        uris={[playlist]}
+        play={true}
+        callback={(state) => onCallbackState(state)}
+        getPlayer={(player) => playerInstance(player)}
+        hideAttribution={true}
+        hideCoverArt={true}
+      />
+    </>
   );
 }

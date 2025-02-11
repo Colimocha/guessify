@@ -8,12 +8,12 @@ export default async function MusicPlayer() {
   let data: Page<SimplifiedPlaylist> | undefined;
 
   if (!session) return null;
-  const accessToken = session.accessToken.access_token;
+  const accessToken = session.accessToken?.access_token;
+  if (!accessToken) return null;
 
   if (session?.user) {
     data = await api.spotify.getUserPlaylists();
   }
-
 
   return (
     <HydrateClient>
