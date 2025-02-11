@@ -28,6 +28,7 @@ export function PlaylistSelector({
       </select>
       <input
         type="number"
+        step={5}
         placeholder="Countdown"
         className="input join-item w-full max-w-xs"
         onInput={(e) => onCountDown(Number(e.currentTarget.value))}

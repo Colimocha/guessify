@@ -4,7 +4,11 @@ import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PauseOutlinedIcon from "@mui/icons-material/PauseOutlined";
 import PlayArrowOutlinedIcon from "@mui/icons-material/PlayArrowOutlined";
+import RepeatIcon from "@mui/icons-material/Repeat";
+import RepeatOnIcon from "@mui/icons-material/RepeatOn";
 import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined";
+import ShuffleIcon from "@mui/icons-material/Shuffle";
+import ShuffleOnIcon from "@mui/icons-material/ShuffleOn";
 import SkipNextOutlinedIcon from "@mui/icons-material/SkipNextOutlined";
 import SkipPreviousOutlinedIcon from "@mui/icons-material/SkipPreviousOutlined";
 import { type SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
@@ -32,6 +36,8 @@ export default function MusicPlayerGUI({
 
   const [isLocked, setLocked] = useState(true);
   const [isPlaying, setPlaying] = useState(false);
+  const [isRepeat, setRepeat] = useState(false);
+  const [isShuffle, setShuffle] = useState(false);
   const timerRef = useRef<NodeJS.Timeout>();
   const intervalRef = useRef<NodeJS.Timeout>();
 
@@ -40,12 +46,10 @@ export default function MusicPlayerGUI({
   };
 
   const handleCallbackState = (state: CallbackState) => {
-    console.log("🚀 ~ handleCallbackState ~ state:", state);
     return setPlayerState(state);
   };
 
   const handlePlayerInstance = (player: Spotify.Player) => {
-    console.log("🚀 ~ handlePlayerInstance ~ player:", player);
     return setPlayerInstance(player);
   };
 
@@ -75,25 +79,30 @@ export default function MusicPlayerGUI({
   };
 
   const handleSetRepeatMode = () => {
-    if (playerInstance) repeatMode({ state: "context" });
+    if (playerInstance) {
+      if (isRepeat) repeatMode({ state: "off" });
+      else repeatMode({ state: "context" });
+    }
   };
 
   const { mutate: repeatMode } = api.spotify.setRepeatMode.useMutation({
-    onSuccess: () => console.log("Set repeat mode!"),
+    onSuccess: () => {
+      setRepeat(!isRepeat);
+    },
   });
 
-  const initRepeatMode = () => {
+  const handleSetShuffleMode = () => {
     if (playerInstance) {
-      playerInstance
-        .getCurrentState()
-        .then((state) => {
-          if (state && state.repeat_mode !== 2) {
-            handleSetRepeatMode();
-          }
-        })
-        .catch(console.error);
+      if (isShuffle) shuffleMode(false);
+      else shuffleMode(true);
     }
   };
+
+  const { mutate: shuffleMode } = api.spotify.setShuffle.useMutation({
+    onSuccess: () => {
+      setShuffle(!isShuffle);
+    },
+  });
 
   const startCountdown = () => {
     if (intervalRef.current) {
@@ -124,7 +133,6 @@ export default function MusicPlayerGUI({
 
   useEffect(() => {
     if (playerInstance && playerState) {
-      initRepeatMode();
       setPlaying(playerState?.isPlaying);
     }
 
@@ -157,7 +165,7 @@ export default function MusicPlayerGUI({
       {/* init spotify playback component */}
       <div>
         {selectedPlaylistId && (
-          <div hidden={true}>
+          <div hidden={true} className="">
             <SpotifyPlayback
               token={token}
               playlist={selectedPlaylistId}
@@ -177,7 +185,7 @@ export default function MusicPlayerGUI({
       <div className="card w-96 bg-base-100 shadow-xl">
         <figure>
           <div className="flex min-h-[320px] w-full items-center justify-center">
-            <button className="btn-circle btn-ghost size-64 text-9xl">
+            <button className="btn-circle btn-ghost size-64 text-9xl ring ring-primary ring-offset-base-100 ring-offset-2 animate-pulse">
               {countdown}
             </button>
           </div>
@@ -188,8 +196,8 @@ export default function MusicPlayerGUI({
             <div className="w-full">
               {isLocked ? (
                 <>
-                  <h2 className="skeleton mb-3 h-6 w-40"></h2>
-                  <div className="skeleton h-4 w-28"></div>
+                  <h2 className="skeleton mb-3 h-6 w-60 animate-pulse"></h2>
+                  <div className="skeleton h-4 w-28 animate-pulse"></div>
                 </>
               ) : (
                 <>
@@ -229,6 +237,19 @@ export default function MusicPlayerGUI({
               onClick={handleNextTrack}
             >
               <SkipNextOutlinedIcon />
+            </button>
+
+            <button
+              className="btn btn-circle btn-outline"
+              onClick={handleSetRepeatMode}
+            >
+              {isRepeat ? <RepeatOnIcon /> : <RepeatIcon />}
+            </button>
+            <button
+              className="btn btn-circle btn-outline"
+              onClick={handleSetShuffleMode}
+            >
+              {isShuffle ? <ShuffleOnIcon /> : <ShuffleIcon />}
             </button>
           </div>
         </div>
