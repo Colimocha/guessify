@@ -81,7 +81,6 @@ export const authConfig = {
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
           accessTokenExpires: (account.expires_at ?? 0) * 1000,
-          user,
         };
       }
 

@@ -1,8 +1,10 @@
 "use client";
 
+import CloseIcon from "@mui/icons-material/Close";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
+import RemoveIcon from "@mui/icons-material/Remove";
 import SettingsIcon from "@mui/icons-material/Settings";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Player = {
   id: number;
@@ -11,20 +13,31 @@ type Player = {
 };
 
 export const GameBoard = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [newPlayerName, setNewPlayerName] = useState("");
+  const [players, setPlayers] = useState<Player[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("players");
+      return saved ? (JSON.parse(saved) as Player[]) : [];
+    }
+    return [];
+  });
+  const [playerCount, setPlayerCount] = useState<string>("");
+
+  useEffect(() => {
+    localStorage.setItem("players", JSON.stringify(players));
+  }, [players]);
 
   const addPlayer = () => {
-    if (newPlayerName.trim()) {
-      setPlayers([
-        ...players,
-        {
-          id: Date.now(),
-          name: newPlayerName,
-          score: 0,
-        },
-      ]);
-      setNewPlayerName("");
+    const count = parseInt(playerCount);
+    if (count > 0) {
+      const currentPlayerCount = players.length;
+      const newPlayers = Array.from({ length: count }, (_, index) => ({
+        id: Date.now() + index,
+        name: `P${currentPlayerCount + index + 1}`,
+        score: 0,
+      }));
+
+      setPlayers([...players, ...newPlayers]);
+      setPlayerCount("");
       const modal = document.getElementById(
         "add_player_modal",
       ) as HTMLDialogElement;
@@ -37,6 +50,17 @@ export const GameBoard = () => {
       players.map((player) =>
         player.id === playerId
           ? { ...player, score: player.score + 1 }
+          : player,
+      ),
+    );
+  };
+
+  const decrementScore = (playerId: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // 防止触发父元素的点击事件
+    setPlayers(
+      players.map((player) =>
+        player.id === playerId
+          ? { ...player, score: Math.max(0, player.score - 1) }
           : player,
       ),
     );
@@ -70,7 +94,7 @@ export const GameBoard = () => {
         >
           <PersonAddAltIcon />
         </button>
-        {players.length > 0 && (
+        {players && (
           <>
             <div className="dropdown dropdown-end">
               <div
@@ -108,27 +132,28 @@ export const GameBoard = () => {
       {/* 模态框 */}
       <dialog id="add_player_modal" className="modal">
         <div className="modal-box">
-          <h3 className="mb-4 text-lg font-bold">添加新玩家</h3>
+          <h3 className="mb-4 text-lg font-bold">Add Players</h3>
           <div className="flex gap-2">
             <input
-              type="text"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              placeholder="请输入玩家名字"
+              type="number"
+              min="1"
+              max="8"
+              value={playerCount}
+              onChange={(e) => setPlayerCount(e.target.value)}
+              placeholder="Enter player count"
               className="input input-bordered w-full"
             />
             <button className="btn btn-primary" onClick={addPlayer}>
-              确定
+              Ok
             </button>
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button>关闭</button>
+          <button>Close</button>
         </form>
       </dialog>
 
-      {/* 玩家列表 */}
-      <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-6 lg:grid-cols-1">
+      <div className="mt-4 grid grid-cols-2 gap-5 md:grid-cols-6 lg:grid-cols-2">
         {players.map((player) => (
           <div
             key={player.id}
@@ -136,10 +161,16 @@ export const GameBoard = () => {
             onClick={() => incrementScore(player.id)}
           >
             <button
-              className="btn btn-circle btn-xs absolute -right-2 -top-2 bg-red-500 text-white hover:bg-red-700"
+              className="btn btn-circle btn-xs absolute -right-1 -top-1 bg-red-500 text-white hover:bg-red-700"
               onClick={(e) => deletePlayer(player.id, e)}
             >
-              ✕
+              <CloseIcon fontSize="small" />
+            </button>
+            <button
+              className="btn btn-circle btn-xs absolute -bottom-1 -right-1 bg-red-800 text-white hover:bg-red-950"
+              onClick={(e) => decrementScore(player.id, e)}
+            >
+              <RemoveIcon fontSize="small" />
             </button>
             <div className="card-body items-center p-3">
               <h2 className="card-title">{player.name}</h2>

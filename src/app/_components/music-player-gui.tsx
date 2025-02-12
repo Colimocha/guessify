@@ -79,13 +79,14 @@ export default function MusicPlayerGUI({
 
   const handleNextTrack = () => {
     if (playerInstance) {
-      playerInstance.nextTrack().catch(console.error);
       setLocked(true);
+      playerInstance.nextTrack().catch(console.error);
     }
   };
 
   const handlePreviousTrack = () => {
     if (playerInstance) {
+      setLocked(true);
       playerInstance.previousTrack().catch(console.error);
     }
   };
