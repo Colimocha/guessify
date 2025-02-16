@@ -1,13 +1,14 @@
 "use client";
 
-import { type SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
+import { type PlaylistSelectorProps } from "~/types/player";
 
-interface PlaylistSelectorProps {
-  playlists: SimplifiedPlaylist[];
-  onPlaylistSelect: (playlistId: string) => void;
-  onCountDown: (countdown: number) => void;
-  onIntervalValue: (value: number) => void;
-}
+const COUNTDOWN_OPTIONS = [1, 2, 3, 5, 10, 15, 20, 30, 60];
+
+const INTERVAL_OPTIONS = [
+  { name: "Presage", value: 0 },
+  { name: "RandomS", value: 1 },
+  { name: "RandomR", value: 2 },
+] as const;
 
 export function PlaylistSelector({
   playlists,
@@ -19,7 +20,7 @@ export function PlaylistSelector({
     <div className="join mb-6 flex w-96 justify-center">
       <select
         className="max-w-s join-item select w-full"
-        defaultValue={""}
+        defaultValue=""
         onChange={(e) => onPlaylistSelect(e.target.value)}
       >
         <option value="" disabled>
@@ -36,10 +37,10 @@ export function PlaylistSelector({
         defaultValue={5}
         onChange={(e) => onCountDown(Number(e.currentTarget.value))}
       >
-        <option value="5" disabled>
+        <option value="" disabled>
           Seconds
         </option>
-        {[1, 2, 3, 5, 10, 15, 20, 30, 60].map((countdown) => (
+        {COUNTDOWN_OPTIONS.map((countdown) => (
           <option key={countdown} value={countdown}>
             {countdown}
           </option>
@@ -50,27 +51,15 @@ export function PlaylistSelector({
         defaultValue={0}
         onChange={(e) => onIntervalValue(Number(e.currentTarget.value))}
       >
-        <option value="0" disabled>
+        <option value="" disabled>
           Interval
         </option>
-        {[
-          { name: "Presage", value: 0 },
-          { name: "RandomS", value: 1 },
-          { name: "RandomR", value: 2 },
-        ].map((data) => (
+        {INTERVAL_OPTIONS.map((data) => (
           <option key={data.name} value={data.value}>
             {data.name}
           </option>
         ))}
       </select>
-      {/* <input
-        type="number"
-        step={5}
-        placeholder="Countdown"
-        className="input join-item w-full max-w-xs"
-        onInput={(e) => onCountDown(Number(e.currentTarget.value))}
-        defaultValue={5}
-      /> */}
     </div>
   );
 }

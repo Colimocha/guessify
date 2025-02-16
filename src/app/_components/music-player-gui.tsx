@@ -9,23 +9,54 @@ import ShuffleIcon from "@mui/icons-material/Shuffle";
 import ShuffleOnIcon from "@mui/icons-material/ShuffleOn";
 import SkipNextOutlinedIcon from "@mui/icons-material/SkipNextOutlined";
 import SkipPreviousOutlinedIcon from "@mui/icons-material/SkipPreviousOutlined";
-import { type SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type CallbackState } from "react-spotify-web-playback";
 import { api } from "~/trpc/react";
+import { type MusicPlayerClientProps, IntervalValue } from "~/types/player";
 import { PlaylistSelector } from "./playlist-selector";
 import SpotifyPlayback from "./spotify-playback";
 
-interface MusicPlayerClientProps {
-  playlists: SimplifiedPlaylist[];
-  token: string;
-}
+const useCountdown = (initialValue: number, onComplete: () => void) => {
+  const [count, setCount] = useState(initialValue);
+  const intervalRef = useRef<NodeJS.Timeout>();
 
-enum IntervalValue {
-  Presage = 0,
-  RandomS = 1,
-  RandomR = 2,
-}
+  const start = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    setCount(initialValue);
+    intervalRef.current = setInterval(() => {
+      setCount((prev) => {
+        if (prev <= 1) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+          onComplete();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [initialValue, onComplete]);
+
+  const stop = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    setCount(initialValue);
+  }, [initialValue]);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  return { count, start, stop };
+};
 
 export default function MusicPlayerGUI({
   playlists,
@@ -36,16 +67,13 @@ export default function MusicPlayerGUI({
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [playerState, setPlayerState] = useState<CallbackState>();
   const [playerInstance, setPlayerInstance] = useState<Spotify.Player>();
-  const [countdown, setCountdown] = useState(initialCountdown);
   const [intervalValue, setIntervalValue] = useState<IntervalValue>(0);
   const [seekPosition, setSeekPosition] = useState<number>(0);
 
   const [isLocked, setLocked] = useState(true);
   const [isPlaying, setPlaying] = useState(false);
-  const [isRepeat, setRepeat] = useState(false);
   const [isShuffle, setShuffle] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout>();
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const [isRepeat, setRepeat] = useState(false);
 
   const handlePlaylistSelect = (playlistId: string) => {
     setSelectedPlaylistId(playlistId);
@@ -61,7 +89,6 @@ export default function MusicPlayerGUI({
 
   const handleUpdateCountdown = (countdown: number) => {
     setInitialCountdown(countdown);
-    setCountdown(countdown);
   };
 
   const handleUpdateIntervalValue = (value: number) => {
@@ -95,19 +122,6 @@ export default function MusicPlayerGUI({
     }
   };
 
-  const handleSetRepeatMode = () => {
-    if (playerInstance) {
-      if (isRepeat) repeatMode({ state: "off" });
-      else repeatMode({ state: "context" });
-    }
-  };
-
-  const { mutate: repeatMode } = api.spotify.setRepeatMode.useMutation({
-    onSuccess: () => {
-      setRepeat(!isRepeat);
-    },
-  });
-
   const handleSetShuffleMode = () => {
     if (playerInstance) {
       if (isShuffle) shuffleMode(false);
@@ -121,90 +135,81 @@ export default function MusicPlayerGUI({
     },
   });
 
-  const startCountdown = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+  const { mutate: repeatMode } = api.spotify.setRepeatMode.useMutation({
+    onSuccess: () => {
+      setRepeat(!isRepeat);
+    },
+  });
+
+  const initializePlayerSettings = useCallback(() => {
+    if (playerInstance && playerState) {
+      if (playerState.shuffle === false) {
+        shuffleMode(true);
+      }
+      if (playerState.repeat === "off") {
+        repeatMode({ state: "context" });
+      }
     }
+  }, [playerInstance, playerState, shuffleMode, repeatMode]);
 
-    setCountdown(initialCountdown);
-
-    intervalRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const stopCountdown = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    setCountdown(initialCountdown);
-  };
-
-  const getRandomPosition = () => {
+  const getRandomPosition = useCallback(() => {
     if (playerState?.track) {
       const trackDurationMs = playerState.track.durationMs;
-      const intervalMs = initialCountdown * 1000; // 将倒计时秒数转换为毫秒
-
-      // 确保不会超出歌曲总长度
+      const intervalMs = initialCountdown * 1000;
       const maxStartPosition = trackDurationMs - intervalMs;
-
       if (maxStartPosition > 0) {
-        // 生成一个随机的起始位置
         return Math.floor(Math.random() * maxStartPosition);
       }
     }
     return 0;
-  };
+  }, [initialCountdown, playerState?.track]);
 
-  useEffect(() => {
-    if (playerInstance && playerState) {
-      setPlaying(playerState?.isPlaying);
+  const {
+    count: countdown,
+    start: startCountdown,
+    stop: stopCountdown,
+  } = useCountdown(initialCountdown, () => {
+    if (playerInstance) {
+      playerInstance.pause().catch(console.error);
+      handleSeekPosition();
+      setPlaying(false);
+    }
+  });
+
+  const handleSeekPosition = useCallback(() => {
+    if (!playerInstance) return;
+    if (playerInstance) {
+      initializePlayerSettings();
     }
 
-    if (playerState?.isPlaying) {
+    const position =
+      intervalValue === IntervalValue.RandomS
+        ? seekPosition
+        : intervalValue === IntervalValue.RandomR
+          ? getRandomPosition()
+          : 0;
+
+    playerInstance.seek(position).catch(console.error);
+  }, [
+    getRandomPosition,
+    intervalValue,
+    playerInstance,
+    seekPosition,
+    initializePlayerSettings,
+  ]);
+
+  useEffect(() => {
+    if (!playerInstance || !playerState) return;
+
+    setPlaying(playerState.isPlaying);
+
+    if (playerState.isPlaying) {
       startCountdown();
-
-      if (playerInstance) {
-        if (intervalValue === IntervalValue.RandomS) {
-          playerInstance.seek(seekPosition).catch(console.error);
-        } else if (intervalValue === IntervalValue.RandomR) {
-          playerInstance.seek(getRandomPosition()).catch(console.error);
-        } else {
-          playerInstance.seek(0).catch(console.error);
-        }
-      }
-
-      // 设置定时器，在倒计时结束后
-      timerRef.current = setTimeout(() => {
-        if (playerInstance) {
-          playerInstance.pause().catch(console.error);
-          if (intervalValue === IntervalValue.RandomS) {
-            playerInstance.seek(seekPosition).catch(console.error);
-          } else if (intervalValue === IntervalValue.RandomR) {
-            playerInstance.seek(getRandomPosition()).catch(console.error);
-          } else {
-            playerInstance.seek(0).catch(console.error);
-          }
-          setPlaying(false);
-        }
-      }, initialCountdown * 1000);
+      handleSeekPosition();
     } else {
       stopCountdown();
     }
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [playerState?.isPlaying, playerInstance, playerState, intervalValue]);
+  }, [handleSeekPosition, playerInstance, playerState]);
 
   return (
     <>
@@ -283,13 +288,6 @@ export default function MusicPlayerGUI({
             >
               <SkipNextOutlinedIcon />
             </button>
-
-            {/* <button
-              className="btn btn-circle btn-outline"
-              onClick={handleSetRepeatMode}
-            >
-              {isRepeat ? <RepeatOnIcon /> : <RepeatIcon />}
-            </button> */}
             <button
               className="btn btn-circle btn-outline absolute right-3 top-3"
               onClick={handleSetShuffleMode}

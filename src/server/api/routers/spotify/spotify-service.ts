@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SpotifyClient } from "~/lib/spotify/client";
+import { SpotifyClient } from "~/server/api/routers/spotify/client";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 export const spotifyRouter = createTRPCRouter({

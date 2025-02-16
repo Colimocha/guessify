@@ -22,8 +22,6 @@ export default function SpotifyPlayback({
         play={true}
         callback={(state) => onCallbackState(state)}
         getPlayer={(player) => playerInstance(player)}
-        hideAttribution={true}
-        hideCoverArt={true}
       />
     </>
   );

@@ -1,25 +1,34 @@
-import { type Page, type SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
 import { auth } from "~/server/auth";
 import { api, HydrateClient } from "~/trpc/server";
 import MusicPlayerGUI from "./music-player-gui";
 
 export default async function MusicPlayer() {
-  const session = await auth();
-  let data: Page<SimplifiedPlaylist> | undefined;
+  try {
+    const session = await auth();
+    if (!session?.accessToken?.access_token) return null;
 
-  if (!session) return null;
-  const accessToken = session.accessToken?.access_token;
-  if (!accessToken) return null;
+    const data = session.user
+      ? await api.spotify.getUserPlaylists()
+      : undefined;
 
-  if (session?.user) {
-    data = await api.spotify.getUserPlaylists();
+    return (
+      <HydrateClient>
+        <div className="min-h-[200px]">
+          {data ? (
+            <MusicPlayerGUI
+              playlists={data.items}
+              token={session.accessToken.access_token}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              加载中...
+            </div>
+          )}
+        </div>
+      </HydrateClient>
+    );
+  } catch (error) {
+    console.error("Music player error:", error);
+    return <div>加载音乐播放器时出错</div>;
   }
-
-  return (
-    <HydrateClient>
-      <div>
-        <MusicPlayerGUI playlists={data?.items ?? []} token={accessToken} />
-      </div>
-    </HydrateClient>
-  );
 }
