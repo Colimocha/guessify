@@ -1,6 +1,6 @@
 "use client";
 
-import { type PlaylistSelectorProps } from "~/types/player";
+import { type SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
 
 const COUNTDOWN_OPTIONS = [1, 2, 3, 5, 10, 15, 20, 30, 60];
 
@@ -9,6 +9,13 @@ const INTERVAL_OPTIONS = [
   { name: "RandomS", value: 1 },
   { name: "RandomR", value: 2 },
 ] as const;
+
+interface PlaylistSelectorProps {
+  playlists: SimplifiedPlaylist[];
+  onPlaylistSelect: (playlistId: string) => void;
+  onCountDown: (countdown: number) => void;
+  onIntervalValue: (value: number) => void;
+}
 
 export function PlaylistSelector({
   playlists,

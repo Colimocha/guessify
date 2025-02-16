@@ -9,13 +9,18 @@ import ShuffleIcon from "@mui/icons-material/Shuffle";
 import ShuffleOnIcon from "@mui/icons-material/ShuffleOn";
 import SkipNextOutlinedIcon from "@mui/icons-material/SkipNextOutlined";
 import SkipPreviousOutlinedIcon from "@mui/icons-material/SkipPreviousOutlined";
+import { type SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type CallbackState } from "react-spotify-web-playback";
 import { api } from "~/trpc/react";
-import { type MusicPlayerClientProps, IntervalValue } from "~/types/player";
+import { IntervalValue } from "~/types/player";
 import { PlaylistSelector } from "./playlist-selector";
 import SpotifyPlayback from "./spotify-playback";
 
+interface MusicPlayerClientProps {
+  playlists: SimplifiedPlaylist[];
+  token: string;
+}
 const useCountdown = (initialValue: number, onComplete: () => void) => {
   const [count, setCount] = useState(initialValue);
   const intervalRef = useRef<NodeJS.Timeout>();
