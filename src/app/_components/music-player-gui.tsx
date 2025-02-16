@@ -6,8 +6,6 @@ import {
   PauseOutlined as PauseOutlinedIcon,
   PlayArrowOutlined as PlayArrowOutlinedIcon,
   ReplayOutlined as ReplayOutlinedIcon,
-  Shuffle as ShuffleIcon,
-  ShuffleOn as ShuffleOnIcon,
   SkipNextOutlined as SkipNextOutlinedIcon,
   SkipPreviousOutlined as SkipPreviousOutlinedIcon,
 } from "@mui/icons-material";
@@ -16,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type CallbackState } from "react-spotify-web-playback";
 import { api } from "~/trpc/react";
 import { IntervalValue } from "~/types/player";
-import { PlaylistSelector } from "./playlist-selector";
+import { PlayerConfigurator } from "./player-configurator";
 import SpotifyPlayback from "./spotify-playback";
 
 interface MusicPlayerClientProps {
@@ -221,16 +219,18 @@ export default function MusicPlayerGUI({
         )}
       </div>
 
-      <PlaylistSelector
-        playlists={playlists}
-        onPlaylistSelect={handlePlaylistSelect}
-        onCountDown={handleCountdown}
-        onIntervalValue={handleIntervalValue}
-      />
+      <div className="relative">
+        <PlayerConfigurator
+          playlists={playlists}
+          onPlaylistSelect={handlePlaylistSelect}
+          onCountDown={handleCountdown}
+          onIntervalValue={handleIntervalValue}
+        />
+      </div>
       <div className="card w-96 bg-base-100 shadow-xl">
         <figure>
           <div className="flex min-h-[320px] w-full items-center justify-center">
-            <button className="btn-circle btn-ghost size-64 text-9xl ring ring-primary ring-offset-2 ring-offset-base-100">
+            <button className="btn-circle btn-ghost size-64 text-9xl ring ring-primary ring-offset-2 ring-offset-base-100 btn-disabled">
               {countdown}
             </button>
           </div>
@@ -282,12 +282,6 @@ export default function MusicPlayerGUI({
               onClick={handleNextTrack}
             >
               <SkipNextOutlinedIcon />
-            </button>
-            <button
-              className="btn btn-circle btn-outline absolute right-3 top-3"
-              onClick={handleSetShuffleMode}
-            >
-              {isShuffle ? <ShuffleOnIcon /> : <ShuffleIcon />}
             </button>
           </div>
         </div>

@@ -39,7 +39,7 @@ export const GameBoard = () => {
           </div>
           <ul
             tabIndex={0}
-            className="menu dropdown-content z-[1] w-52 gap-2 rounded-box bg-base-100 p-2 shadow"
+            className="menu dropdown-content z-[100] w-52 gap-2 rounded-box bg-base-100 p-2 shadow"
           >
             <li>
               <button
@@ -60,7 +60,7 @@ export const GameBoard = () => {
 
       <AddPlayerModal onAdd={addPlayers} />
 
-      <div className="mt-6 grid grid-rows-5 gap-2">
+      <div className="mt-2 grid grid-rows-4 gap-2">
         {players.map((player) => (
           <PlayerCard
             key={player.id}

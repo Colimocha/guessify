@@ -20,7 +20,7 @@ export const AddPlayerModal = ({ onAdd }: AddPlayerModalProps) => {
   };
 
   return (
-    <dialog id="add_player_modal" className="modal">
+    <dialog id="add_player_modal" className="modal overflow-hidden">
       <div className="modal-box">
         <h3 className="mb-4 text-lg font-bold">Add Players</h3>
         <div className="flex gap-2">
