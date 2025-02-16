@@ -80,7 +80,7 @@ export const GameBoard = () => {
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 p-4 shadow-lg">
+    <div className="rounded-xl border-2 border-gray-300 p-4 shadow-md shadow-white">
       <div className="join mt-4 flex">
         {/* 打开模态框的按钮 */}
         <button

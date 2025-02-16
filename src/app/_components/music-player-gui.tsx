@@ -4,8 +4,6 @@ import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PauseOutlinedIcon from "@mui/icons-material/PauseOutlined";
 import PlayArrowOutlinedIcon from "@mui/icons-material/PlayArrowOutlined";
-import RepeatIcon from "@mui/icons-material/Repeat";
-import RepeatOnIcon from "@mui/icons-material/RepeatOn";
 import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
 import ShuffleOnIcon from "@mui/icons-material/ShuffleOn";
@@ -24,8 +22,9 @@ interface MusicPlayerClientProps {
 }
 
 enum IntervalValue {
-  Begin = 0,
-  Random = 1,
+  Presage = 0,
+  RandomS = 1,
+  RandomR = 2,
 }
 
 export default function MusicPlayerGUI({
@@ -38,9 +37,8 @@ export default function MusicPlayerGUI({
   const [playerState, setPlayerState] = useState<CallbackState>();
   const [playerInstance, setPlayerInstance] = useState<Spotify.Player>();
   const [countdown, setCountdown] = useState(initialCountdown);
-  const [intervalValue, setIntervalValue] = useState<IntervalValue>(
-    IntervalValue.Begin,
-  );
+  const [intervalValue, setIntervalValue] = useState<IntervalValue>(0);
+  const [seekPosition, setSeekPosition] = useState<number>(0);
 
   const [isLocked, setLocked] = useState(true);
   const [isPlaying, setPlaying] = useState(false);
@@ -81,6 +79,9 @@ export default function MusicPlayerGUI({
     if (playerInstance) {
       setLocked(true);
       playerInstance.nextTrack().catch(console.error);
+      setSeekPosition(
+        intervalValue === IntervalValue.RandomS ? getRandomPosition() : 0,
+      );
     }
   };
 
@@ -88,6 +89,9 @@ export default function MusicPlayerGUI({
     if (playerInstance) {
       setLocked(true);
       playerInstance.previousTrack().catch(console.error);
+      setSeekPosition(
+        intervalValue === IntervalValue.RandomS ? getRandomPosition() : 0,
+      );
     }
   };
 
@@ -168,20 +172,24 @@ export default function MusicPlayerGUI({
     if (playerState?.isPlaying) {
       startCountdown();
 
-      if (intervalValue === IntervalValue.Random && playerInstance) {
-        const randomPos = getRandomPosition();
-        playerInstance.seek(randomPos).catch(console.error);
-      } else if (intervalValue === IntervalValue.Begin) {
-        playerInstance?.seek(0).catch(console.error);
+      if (playerInstance) {
+        if (intervalValue === IntervalValue.RandomS) {
+          playerInstance.seek(seekPosition).catch(console.error);
+        } else if (intervalValue === IntervalValue.RandomR) {
+          playerInstance.seek(getRandomPosition()).catch(console.error);
+        } else {
+          playerInstance.seek(0).catch(console.error);
+        }
       }
 
       // 设置定时器，在倒计时结束后
       timerRef.current = setTimeout(() => {
         if (playerInstance) {
           playerInstance.pause().catch(console.error);
-          if (intervalValue === IntervalValue.Random) {
-            const newRandomPos = getRandomPosition();
-            playerInstance.seek(newRandomPos).catch(console.error);
+          if (intervalValue === IntervalValue.RandomS) {
+            playerInstance.seek(seekPosition).catch(console.error);
+          } else if (intervalValue === IntervalValue.RandomR) {
+            playerInstance.seek(getRandomPosition()).catch(console.error);
           } else {
             playerInstance.seek(0).catch(console.error);
           }
@@ -233,8 +241,8 @@ export default function MusicPlayerGUI({
             <div className="w-full">
               {isLocked ? (
                 <>
-                  <h2 className="skeleton mb-3 h-6 w-60 animate-pulse"></h2>
-                  <div className="skeleton h-4 w-28 animate-pulse"></div>
+                  <h2 className="skeleton mb-3 h-6 w-60"></h2>
+                  <div className="skeleton h-4 w-28"></div>
                 </>
               ) : (
                 <>
@@ -253,15 +261,15 @@ export default function MusicPlayerGUI({
             </button>
           </div>
 
-          <div className="card-actions justify-center">
+          <div className="card-actions justify-center gap-5">
             <button
-              className="btn btn-circle btn-outline"
+              className="btn btn-circle btn-outline btn-info scale-90"
               onClick={handlePreviousTrack}
             >
               <SkipPreviousOutlinedIcon />
             </button>
             <button
-              className="btn btn-circle btn-outline"
+              className="btn btn-circle btn-primary scale-125 text-white"
               onClick={handlePlayButton}
             >
               {isPlaying ? <PauseOutlinedIcon /> : <PlayArrowOutlinedIcon />}
@@ -270,20 +278,20 @@ export default function MusicPlayerGUI({
               <ReplayOutlinedIcon />
             </button>
             <button
-              className="btn btn-circle btn-outline"
+              className="btn btn-circle btn-outline btn-info scale-90"
               onClick={handleNextTrack}
             >
               <SkipNextOutlinedIcon />
             </button>
 
-            <button
+            {/* <button
               className="btn btn-circle btn-outline"
               onClick={handleSetRepeatMode}
             >
               {isRepeat ? <RepeatOnIcon /> : <RepeatIcon />}
-            </button>
+            </button> */}
             <button
-              className="btn btn-circle btn-outline"
+              className="btn btn-circle btn-outline absolute right-3 top-3"
               onClick={handleSetShuffleMode}
             >
               {isShuffle ? <ShuffleOnIcon /> : <ShuffleIcon />}

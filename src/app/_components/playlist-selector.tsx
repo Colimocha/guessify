@@ -23,7 +23,7 @@ export function PlaylistSelector({
         onChange={(e) => onPlaylistSelect(e.target.value)}
       >
         <option value="" disabled>
-          加载歌单
+          Playlist
         </option>
         {playlists.map((playlist) => (
           <option key={playlist.id} value={playlist.uri}>
@@ -37,7 +37,7 @@ export function PlaylistSelector({
         onChange={(e) => onCountDown(Number(e.currentTarget.value))}
       >
         <option value="5" disabled>
-          选择秒数
+          Seconds
         </option>
         {[1, 2, 3, 5, 10, 15, 20, 30, 60].map((countdown) => (
           <option key={countdown} value={countdown}>
@@ -51,11 +51,12 @@ export function PlaylistSelector({
         onChange={(e) => onIntervalValue(Number(e.currentTarget.value))}
       >
         <option value="0" disabled>
-          选择区间
+          Interval
         </option>
         {[
-          { name: "前奏", value: 0 },
-          { name: "随机", value: 1 },
+          { name: "Presage", value: 0 },
+          { name: "RandomS", value: 1 },
+          { name: "RandomR", value: 2 },
         ].map((data) => (
           <option key={data.name} value={data.value}>
             {data.name}
