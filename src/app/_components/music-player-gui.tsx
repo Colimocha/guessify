@@ -1,14 +1,16 @@
 "use client";
 
-import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import PauseOutlinedIcon from "@mui/icons-material/PauseOutlined";
-import PlayArrowOutlinedIcon from "@mui/icons-material/PlayArrowOutlined";
-import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined";
-import ShuffleIcon from "@mui/icons-material/Shuffle";
-import ShuffleOnIcon from "@mui/icons-material/ShuffleOn";
-import SkipNextOutlinedIcon from "@mui/icons-material/SkipNextOutlined";
-import SkipPreviousOutlinedIcon from "@mui/icons-material/SkipPreviousOutlined";
+import {
+  LockOpenOutlined as LockOpenOutlinedIcon,
+  LockOutlined as LockOutlinedIcon,
+  PauseOutlined as PauseOutlinedIcon,
+  PlayArrowOutlined as PlayArrowOutlinedIcon,
+  ReplayOutlined as ReplayOutlinedIcon,
+  Shuffle as ShuffleIcon,
+  ShuffleOn as ShuffleOnIcon,
+  SkipNextOutlined as SkipNextOutlinedIcon,
+  SkipPreviousOutlined as SkipPreviousOutlinedIcon,
+} from "@mui/icons-material";
 import { type SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type CallbackState } from "react-spotify-web-playback";
@@ -80,29 +82,17 @@ export default function MusicPlayerGUI({
   const [isShuffle, setShuffle] = useState(false);
   const [isRepeat, setRepeat] = useState(false);
 
-  const handlePlaylistSelect = (playlistId: string) => {
+  const handlePlaylistSelect = (playlistId: string) =>
     setSelectedPlaylistId(playlistId);
-  };
-
-  const handleCallbackState = (state: CallbackState) => {
-    return setPlayerState(state);
-  };
-
-  const handlePlayerInstance = (player: Spotify.Player) => {
-    return setPlayerInstance(player);
-  };
-
-  const handleUpdateCountdown = (countdown: number) => {
-    setInitialCountdown(countdown);
-  };
-
-  const handleUpdateIntervalValue = (value: number) => {
-    setIntervalValue(value);
-  };
+  const handleCallbackState = (state: CallbackState) => setPlayerState(state);
+  const handlePlayerInstance = (player: Spotify.Player) =>
+    setPlayerInstance(player);
+  const handleCountdown = (countdown: number) => setInitialCountdown(countdown);
+  const handleIntervalValue = (value: number) => setIntervalValue(value);
 
   const handlePlayButton = () => {
     if (playerInstance) {
-      playerInstance.togglePlay().catch(console.error);
+      void playerInstance.togglePlay();
       setPlaying(!isPlaying);
     }
   };
@@ -234,13 +224,13 @@ export default function MusicPlayerGUI({
       <PlaylistSelector
         playlists={playlists}
         onPlaylistSelect={handlePlaylistSelect}
-        onCountDown={handleUpdateCountdown}
-        onIntervalValue={handleUpdateIntervalValue}
+        onCountDown={handleCountdown}
+        onIntervalValue={handleIntervalValue}
       />
       <div className="card w-96 bg-base-100 shadow-xl">
         <figure>
           <div className="flex min-h-[320px] w-full items-center justify-center">
-            <button className="btn-circle btn-ghost size-64 animate-pulse text-9xl ring ring-primary ring-offset-2 ring-offset-base-100">
+            <button className="btn-circle btn-ghost size-64 text-9xl ring ring-primary ring-offset-2 ring-offset-base-100">
               {countdown}
             </button>
           </div>
