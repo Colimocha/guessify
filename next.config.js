@@ -6,14 +6,22 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
-    images: {
-        remotePatterns: [
-            {
-                protocol: "https",
-                hostname: "img.daisyui.com"
-            }
-        ]
-    }
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "img.daisyui.com",
+      },
+      {
+        protocol: "https",
+        hostname: "mosaic.scdn.co",
+      },
+      {
+        protocol: "https",
+        hostname: "image-cdn-ak.spotifycdn.com",
+      },
+    ],
+  },
 };
 
 export default config;

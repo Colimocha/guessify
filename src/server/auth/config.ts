@@ -1,6 +1,7 @@
 import { type NextAuthConfig } from "next-auth";
 import { type JWT } from "next-auth/jwt";
 import Spotify from "next-auth/providers/spotify";
+import { env } from "~/env";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -13,9 +14,9 @@ import Spotify from "next-auth/providers/spotify";
 const scope =
   "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state user-library-read user-library-modify playlist-read-private playlist-read-collaborative";
 
-const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_REFRESH_TOKEN_URL = process.env.SPOTIFY_REFRESH_TOKEN_URL;
+const CLIENT_ID = env.SPOTIFY_CLIENT_ID;
+const CLIENT_SECRET = env.SPOTIFY_CLIENT_SECRET;
+const SPOTIFY_REFRESH_TOKEN_URL = env.SPOTIFY_REFRESH_TOKEN_URL;
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
@@ -23,7 +24,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       "base64",
     );
 
-    const response = await fetch(SPOTIFY_REFRESH_TOKEN_URL!, {
+    const response = await fetch(SPOTIFY_REFRESH_TOKEN_URL, {
       method: "POST",
       headers: {
         Authorization: `Basic ${basicAuth}`,
@@ -61,21 +62,13 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 export const authConfig = {
   providers: [
     Spotify({
-      clientId: process.env.SPOTIFY_CLIENT_ID,
-      clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+      clientId: env.SPOTIFY_CLIENT_ID,
+      clientSecret: env.SPOTIFY_CLIENT_SECRET,
       authorization: "https://accounts.spotify.com/authorize?scope=" + scope,
     }),
   ],
   callbacks: {
-    // 添加 jwt 回调来存储 Spotify tokens
     async jwt({ token, account, user }) {
-      // if (account && user) {
-      //   token.accessToken = account.access_token;
-      //   token.refreshToken = account.refresh_token;
-      //   token.accessTokenExpires = (account.expires_at ?? 0) * 1000 || 0; // expires_at 单位为秒，转换为毫秒
-      //   token.expires = account.expires_at;
-      // }
-
       if (account && user) {
         return {
           accessToken: account.access_token,
@@ -84,15 +77,11 @@ export const authConfig = {
         };
       }
 
-      // 检测 token 是否过期，如果过期则获取新 token
       if (token.accessTokenExpires && Date.now() < token.accessTokenExpires)
         return token;
 
       return await refreshAccessToken(token);
-
-      // return token;
     },
-    // 修改 session 回调以返回 access token 到前端
     session: ({ session, token }) => ({
       ...session,
       user: {

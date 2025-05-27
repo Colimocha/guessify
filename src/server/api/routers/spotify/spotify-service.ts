@@ -3,6 +3,18 @@ import { SpotifyClient } from "~/server/api/routers/spotify/client";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 export const spotifyRouter = createTRPCRouter({
+  getCurrentUserProfile: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.session?.accessToken) throw new Error("Access token is missing");
+    const client = SpotifyClient.getInstance(ctx.session?.accessToken);
+    const userProfile = await client.currentUser.profile();
+    return userProfile;
+  }),
+  getCurrentUserIsPremium: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.session?.accessToken) throw new Error("Access token is missing");
+    const client = SpotifyClient.getInstance(ctx.session?.accessToken);
+    const userProfile = await client.currentUser.profile();
+    return userProfile.product === "premium";
+  }),
   getUserPlaylists: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.session?.accessToken) throw new Error("Access token is missing");
     const client = SpotifyClient.getInstance(ctx.session?.accessToken);
