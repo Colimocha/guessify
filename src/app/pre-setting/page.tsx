@@ -78,18 +78,39 @@ export default function PreSetting() {
     if (!selectedPlaylist) return;
     setLoading(true);
     try {
+      // 首先重置游戏状态 - This is why state is cleaned on page refresh
+      // When starting a new game, we intentionally reset the previous game state
+      // to ensure a clean start with the newly selected playlist
+      const resetGameState = usePlayerConfigStore.getState().resetGameState;
+      if (typeof resetGameState === "function") {
+        resetGameState();
+      }
+
       // 获取歌单所有歌曲
       const res = await getPlayerListMutation.mutateAsync(selectedPlaylist.id);
-      const tracks = (res.items ?? [])
+      const tracks = (res?.items ?? [])
         .map((item: PlaylistedTrack<Track>) => item.track)
         .filter((t): t is Track => Boolean(t));
+
+      if (tracks.length === 0) {
+        throw new Error("歌单中没有可用的歌曲");
+      }
+
+      // 随机化歌曲顺序
       const shuffledTracks = shuffleArray(tracks);
+
+      console.log(`已加载 ${shuffledTracks.length} 首歌曲，准备开始游戏`);
+
+      // 初始化游戏状态
       setGameTracksSafe(shuffledTracks);
       setCurrentTrackSafe(shuffledTracks[0] ?? null);
       setCurrentTrackIndexSafe(0);
       setTotalTrackCountSafe(shuffledTracks.length);
+
+      // 跳转到游戏页面
       router.push("/gaming");
-    } catch {
+    } catch (error) {
+      console.error("获取歌单歌曲失败", error);
       alert("获取歌单歌曲失败");
     } finally {
       setLoading(false);

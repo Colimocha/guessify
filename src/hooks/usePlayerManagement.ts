@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type Player } from "~/types/player";
+import { type Player } from "~/types/player-state";
 
 /**
  * Custom hook for managing a list of players and their scores.

@@ -20,6 +20,10 @@ const config = {
         protocol: "https",
         hostname: "image-cdn-ak.spotifycdn.com",
       },
+      {
+        protocol: "https",
+        hostname: "i.scdn.co",
+      },
     ],
   },
 };
