@@ -476,7 +476,7 @@ export default function MusicGame() {
       </div>
 
       {/* Debug Information */}
-      {true && (
+      {false && (
         <div className="card bg-base-100 mt-8 w-full max-w-4xl p-6 shadow-sm">
           <h2 className="text-lg font-bold">Debug Information</h2>
           <pre className="text-sm break-all whitespace-pre-wrap">
