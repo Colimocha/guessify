@@ -97,7 +97,7 @@ export const usePlayerConfigStore = create<PlayerConfigState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           log("State hydrated from localStorage");
-          log(`Found ${state.gameTracks?.length || 0} game tracks in storage`);
+          log(`Found ${state.gameTracks?.length ?? 0} game tracks in storage`);
         } else {
           log("Failed to hydrate state from localStorage");
         }
