@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { TRPCReactProvider } from "~/trpc/react";
 import { AuthProvider } from "./_components/auth/auth-provider";
 import { SpotifyAuthButtons } from "./_components/auth/spotify-auth-buttons";
@@ -26,7 +27,10 @@ export default function RootLayout({
                 <SpotifyAuthButtons />
               </div>
             </div>
-            <TRPCReactProvider>{children}</TRPCReactProvider>
+            <TRPCReactProvider>
+              {children}
+              <SpeedInsights />
+            </TRPCReactProvider>
           </main>
         </AuthProvider>
       </body>
