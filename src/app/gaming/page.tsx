@@ -8,6 +8,7 @@ import {
   SkipPreviousOutlined as SkipPreviousOutlinedIcon,
 } from "@mui/icons-material";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePlayerConfigStore } from "../_store/player-config";
 
@@ -24,8 +25,7 @@ export default function Gaming() {
     totalTrackCount,
   } = usePlayerConfigStore();
 
-  const [is_paused, setPaused] = useState<boolean>(false);
-  const [is_active, setActive] = useState<boolean>(false);
+  const [is_paused, setPaused] = useState<boolean>(true);
   const [player, setPlayer] = useState<Spotify.Player | null>(null);
   const [current_track, setTrack] = useState<Spotify.Track | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export default function Gaming() {
   }, [access_token]);
 
   // 切歌时用 Web API 播放指定曲目
-  const playTrackByIndex = async (index: number) => {
+  const triggerTrackPlayback = async (index: number) => {
     if (!gameTracks || !session?.accessToken || !deviceId) return;
     const track = gameTracks[index];
     if (!track?.uri) return;
@@ -95,9 +95,20 @@ export default function Gaming() {
         body: JSON.stringify({ uris: [track.uri] }),
       },
     );
+
+    triggerCountdownAction();
   };
 
-  const handlePrev = async () => {
+  const triggerCountdownAction = () => {
+    setTimeout(() => {
+      if (player) {
+        void player.pause();
+        void player.seek(0);
+      }
+    }, countdown * 1000);
+  };
+
+  const playPreviousTrack = async () => {
     if (
       gameTracks &&
       currentTrackIndex !== undefined &&
@@ -105,13 +116,13 @@ export default function Gaming() {
       setCurrentTrackIndex
     ) {
       const prevIndex = Math.max((currentTrackIndex ?? 0) - 1, 0);
-      await playTrackByIndex(prevIndex);
+      await triggerTrackPlayback(prevIndex);
       setCurrentTrack(gameTracks[prevIndex] ?? null);
       setCurrentTrackIndex(prevIndex);
     }
   };
 
-  const handleNext = async () => {
+  const playNextTrack = async () => {
     if (
       gameTracks &&
       currentTrackIndex !== undefined &&
@@ -122,35 +133,40 @@ export default function Gaming() {
         (currentTrackIndex ?? 0) + 1,
         (gameTracks.length ?? 1) - 1,
       );
-      await playTrackByIndex(nextIndex);
+      await triggerTrackPlayback(nextIndex);
       setCurrentTrack(gameTracks[nextIndex] ?? null);
       setCurrentTrackIndex(nextIndex);
     }
   };
 
-  const handlePlayPause = async () => {
+  const togglePlayback = async () => {
     if (!player) return;
-    if (!is_active) {
-      await playTrackByIndex(currentTrackIndex ?? 0);
-      setActive(true);
-      setPaused(false);
-    } else {
-      void player.togglePlay();
-    }
+    if (gameTracks && currentTrackIndex !== undefined && currentTrackIndex == 0)
+      await triggerTrackPlayback(currentTrackIndex ?? 0);
+    else void player.togglePlay();
+    triggerCountdownAction();
   };
 
   return (
     <>
       <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-4 p-4">
-        <div className="card bg-base-100 w-full max-w-2xl flex-row items-center gap-6 p-6 shadow-xl">
+        <div className="card bg-base-100 w-full max-w-sm flex-col items-center gap-6 p-12 shadow-xl">
           {true ? (
             <>
               {/* 左侧 唱片和倒计时 */}
               <div className="flex w-1/2 flex-col items-center justify-center">
                 <div className="relative flex items-center justify-center">
-                  <div className="flex size-40 items-center justify-center rounded-full bg-gradient-to-tr from-green-400 via-black to-green-700 shadow-inner">
-                    <span className="text-4xl text-white">{countdown}</span>
-                  </div>
+                  <Image
+                    src={
+                      current_track?.album?.images?.[0]?.url ??
+                      currentTrack?.album?.images?.[0]?.url ??
+                      "/default-album-cover.png"
+                    }
+                    alt="Album Cover"
+                    width={200}
+                    height={200}
+                    className="aspect-square rounded-full shadow-lg"
+                  />
                 </div>
               </div>
 
@@ -172,14 +188,14 @@ export default function Gaming() {
                 <div className="card-actions justify-center gap-5">
                   <button
                     className="btn btn-circle btn-outline btn-info scale-90"
-                    onClick={handlePrev}
+                    onClick={playPreviousTrack}
                     disabled={currentTrackIndex! <= 0}
                   >
                     <SkipPreviousOutlinedIcon />
                   </button>
                   <button
                     className="btn btn-circle btn-primary scale-125 text-white"
-                    onClick={handlePlayPause}
+                    onClick={togglePlayback}
                   >
                     {!is_paused ? (
                       <PauseOutlinedIcon />
@@ -192,7 +208,7 @@ export default function Gaming() {
                   </button>
                   <button
                     className="btn btn-circle btn-outline btn-info scale-90"
-                    onClick={handleNext}
+                    onClick={playNextTrack}
                     disabled={currentTrackIndex! >= totalTrackCount! - 1}
                   >
                     <SkipNextOutlinedIcon />
@@ -216,6 +232,7 @@ export default function Gaming() {
         <pre className="text-sm break-all whitespace-pre-wrap">
           {JSON.stringify(
             {
+              countdown,
               currentTrackIndex,
             },
             null,
