@@ -4,6 +4,8 @@ import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import { AuthProvider } from "./_components/auth/auth-provider";
+import { SpotifyAuthButtons } from "./_components/auth/spotify-auth-buttons";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -17,7 +19,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable}`} data-theme="dark">
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <AuthProvider>
+          <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
+            <div className="absolute top-4 right-4 flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <SpotifyAuthButtons />
+              </div>
+            </div>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

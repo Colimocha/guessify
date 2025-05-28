@@ -11,6 +11,7 @@ export class SpotifyClient {
         accessToken,
       );
     }
+
     return this.instance;
   }
 }
