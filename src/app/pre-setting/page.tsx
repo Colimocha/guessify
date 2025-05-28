@@ -1,8 +1,9 @@
 "use client";
 
+import type { PlaylistedTrack, Track } from "@spotify/web-api-ts-sdk";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "~/trpc/react";
 import { usePlayerConfigStore } from "../_store/player-config";
@@ -17,6 +18,8 @@ const INTERVAL_OPTIONS = [
 export default function PreSetting() {
   const { data: session, status } = useSession();
   const [isShowDebug, setIsShowDebug] = useState(true);
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const {
     playlists,
@@ -27,9 +30,14 @@ export default function PreSetting() {
     setCountdown,
     intervalMode,
     setIntervalMode,
+    gameTracks,
+    setGameTracks,
+    setCurrentTrack,
+    setCurrentTrackIndex,
+    setTotalTrackCount,
+    currentTrack,
   } = usePlayerConfigStore();
 
-  // 歌单获取
   const { data: playlistData, isLoading: playlistLoading } =
     api.spotify.getUserPlaylists.useQuery(undefined, {
       enabled: status === "authenticated",
@@ -38,7 +46,6 @@ export default function PreSetting() {
     if (playlistData?.items) setPlaylists(playlistData.items);
   }, [playlistData, setPlaylists]);
 
-  // 检查Premium
   const { data: isPremium, isLoading: isPremiumLoading } =
     api.spotify.getCurrentUserIsPremium.useQuery(undefined, {
       enabled: status === "authenticated",
@@ -49,6 +56,45 @@ export default function PreSetting() {
       redirect("/");
     }
   }, [status]);
+
+  const setGameTracksSafe = setGameTracks ?? (() => undefined);
+  const setCurrentTrackSafe = setCurrentTrack ?? (() => undefined);
+  const setCurrentTrackIndexSafe = setCurrentTrackIndex ?? (() => undefined);
+  const setTotalTrackCountSafe = setTotalTrackCount ?? (() => undefined);
+  const getPlayerListMutation = api.spotify.getPlayerList.useMutation();
+
+  function shuffleArray<T>(array: T[]): T[] {
+    const arr: T[] = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp: T = arr[i]!;
+      arr[i] = arr[j]!;
+      arr[j] = temp;
+    }
+    return arr;
+  }
+
+  async function handlePlayClick() {
+    if (!selectedPlaylist) return;
+    setLoading(true);
+    try {
+      // 获取歌单所有歌曲
+      const res = await getPlayerListMutation.mutateAsync(selectedPlaylist.id);
+      const tracks = (res.items ?? [])
+        .map((item: PlaylistedTrack<Track>) => item.track)
+        .filter((t): t is Track => Boolean(t));
+      const shuffledTracks = shuffleArray(tracks);
+      setGameTracksSafe(shuffledTracks);
+      setCurrentTrackSafe(shuffledTracks[0] ?? null);
+      setCurrentTrackIndexSafe(0);
+      setTotalTrackCountSafe(shuffledTracks.length);
+      router.push("/gaming");
+    } catch {
+      alert("获取歌单歌曲失败");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-4 px-4 py-16">
@@ -65,6 +111,7 @@ export default function PreSetting() {
           <span
             className={`badge ${isPremium ? "badge-info" : "badge-warning"}`}
           >
+            <span className="loading loading-spinner loading-xs"></span>{" "}
             Checking Premium Status...
           </span>
         ) : (
@@ -116,12 +163,17 @@ export default function PreSetting() {
 
         <button
           className="btn btn-primary absolute end-5"
-          disabled={!selectedPlaylist}
-          onClick={() => {
-            redirect("/gaming");
-          }}
+          disabled={!selectedPlaylist || loading}
+          onClick={handlePlayClick}
         >
-          Play!
+          {loading ? (
+            <>
+              <span className="loading loading-spinner loading-xs"></span>
+              Loading...
+            </>
+          ) : (
+            "Play!"
+          )}
         </button>
       </div>
       <div className="card bg-base-100 w-full flex-row gap-8 rounded-lg p-6 shadow-sm">
@@ -155,24 +207,22 @@ export default function PreSetting() {
             {/* 歌单列表 */}
             {!playlistLoading &&
               playlists.map((playlist) => (
-                <>
-                  <div
-                    key={playlist.id}
-                    className={`hover:bg-base-200 flex cursor-pointer items-center gap-3 rounded-lg p-2 transition`}
-                    onClick={() => setSelectedPlaylist(playlist)}
-                  >
-                    {playlist.images?.[0]?.url && (
-                      <Image
-                        src={playlist.images[0].url}
-                        alt={playlist.name}
-                        width={48}
-                        height={48}
-                        className="rounded"
-                      />
-                    )}
-                    <span className="truncate">{playlist.name}</span>
-                  </div>
-                </>
+                <div
+                  key={playlist.id}
+                  className={`hover:bg-base-200 flex cursor-pointer items-center gap-3 rounded-lg p-2 transition`}
+                  onClick={() => setSelectedPlaylist(playlist)}
+                >
+                  {playlist.images?.[0]?.url && (
+                    <Image
+                      src={playlist.images[0].url}
+                      alt={playlist.name}
+                      width={48}
+                      height={48}
+                      className="rounded"
+                    />
+                  )}
+                  <span className="truncate">{playlist.name}</span>
+                </div>
               ))}
             {!playlistLoading && playlists.length === 0 && (
               <div className="text-base-content/60 py-4 text-center">
@@ -227,12 +277,20 @@ export default function PreSetting() {
         <div className="card bg-base-100 w-full max-w-4xl p-6 shadow-sm">
           <h2 className="text-lg font-bold">Debug Information</h2>
           <pre className="text-sm break-all whitespace-pre-wrap">
+            {gameTracks && gameTracks?.length > 0
+              ? `Game Tracks: ${gameTracks?.length} tracks: ${gameTracks
+                  .map((t) => t.name)
+                  .join(", ")}`
+              : "No game tracks loaded yet."}
+            <br />
+            <br />
             {JSON.stringify(
               {
                 session,
                 selectedPlaylist,
                 countdown,
                 intervalMode,
+                currentTrack,
               },
               null,
               2,
